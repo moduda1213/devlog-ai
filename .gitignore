@@ -1,0 +1,39 @@
+# === Global ===
+.DS_Store
+.vscode/
+.idea/
+*.log
+
+# === Server (Python/FastAPI) ===
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+.env.*
+*.sqlite3
+
+# Distribution / Packaging
+build/
+dist/
+*.egg-info/
+
+# === Publishing (Node/React) ===
+publishing/node_modules/
+publishing/dist/
+publishing/.env.local
+publishing/.env.development.local
+publishing/.env.test.local
+publishing/.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# === DevLog AI Specific ===
+backup/
+publishing/
+core-manifest.md
+feedback.md
+gemini.md
+docs/
