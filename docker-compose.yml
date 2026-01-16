@@ -1,0 +1,74 @@
+services:
+  # === Database Service (Alpine 버전으로 경량화) === 
+  db:
+    image: postgres:15-alpine
+    container_name: devlog-db
+    restart: ${DOCKER_RESTART_POLICY}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}       
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD} 
+      - POSTGRES_DB=${POSTGRES_DB}             
+    ports:
+      - "${POSTGRES_PORT}:5432" # 호스트:컨테이너
+    networks:
+      - devlog-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 7 (Alpine 버전)
+  redis:
+    image: redis:7-alpine
+    container_name: devlog-redis
+    restart: ${DOCKER_RESTART_POLICY}
+    ports:
+      - "${REDIS_PORT}:6379"
+    networks:
+      - devlog-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+  # === Backend API Service ===
+  server:
+    build: 
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: devlog-server
+    restart: ${DOCKER_RESTART_POLICY}
+    volumes:
+      - ./server:/app  # 코드 수정 시 즉시 반영 (Hot Reload)
+    ports:
+      - "8000:8000"
+    environment:
+      # 컨테이너 내부 통신이므로 db 호스트는 서비스명('db') 사용
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379/0
+      # 나머지 환경변수는 .env에서 가져옴
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - SECRET_KEY=${SECRET_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - devlog-network
+
+# 데이터 영속성을 위한 볼륨
+volumes:
+  postgres_data:
+
+# 컨테이너 간 통신을 위한 네트워크
+networks:
+  devlog-network:
+    driver: bridge

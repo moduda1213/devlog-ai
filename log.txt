@@ -1,0 +1,14 @@
+warning: in the working copy of 'server/alembic.ini', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/alembic/env.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/alembic/script.py.mako', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/alembic/versions/a7e83e692bbf_create_user_repositories_devlogs_table.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/app/core/config.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/app/main.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/app/models/devlog.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/main.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/pyproject.toml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/tests/conftest.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/tests/test_models/test_devlogs.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/tests/test_models/test_repositories.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/tests/test_models/test_users.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/uv.lock', LF will be replaced by CRLF the next time Git touches it

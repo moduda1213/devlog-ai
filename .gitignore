@@ -37,3 +37,20 @@ core-manifest.md
 feedback.md
 gemini.md
 docs/
+memo/
+# log.txt
+
+# Python/UV (uv creates .venv by default)
+.venv/
+
+# Testing (pytest cache)
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Linting / Type Checking
+.ruff_cache/
+.mypy_cache/
+
+# Docker (Local overrides)
+# docker-compose.override.yml
