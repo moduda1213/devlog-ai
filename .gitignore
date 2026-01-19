@@ -38,7 +38,7 @@ feedback.md
 gemini.md
 docs/
 memo/
-# log.txt
+log.txt
 
 # Python/UV (uv creates .venv by default)
 .venv/

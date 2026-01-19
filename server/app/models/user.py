@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import String, Integer, DateTime, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.core.security import decrypt_token
 
 from app.core.database import Base
 
@@ -39,3 +40,14 @@ class User(Base):
         foreign_keys="[Repository.user_id]"
     )
     logs = relationship("DevLog", back_populates="user")
+    
+    @property
+    def decrypted_access_token(self) -> str:
+        """암호화된 토큰을 복호화하여 반환"""
+        if not self.access_token_encrypted:
+            return ""
+        try:
+            return decrypt_token(self.access_token_encrypted)
+        except Exception:
+            # 복호화 실패 시 빈 문자열 반환 (또는 로깅)
+            return ""

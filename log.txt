@@ -1,14 +1,159 @@
-warning: in the working copy of 'server/alembic.ini', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server/alembic/env.py', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server/alembic/script.py.mako', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server/alembic/versions/a7e83e692bbf_create_user_repositories_devlogs_table.py', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server/app/core/config.py', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server/app/main.py', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server/app/models/devlog.py', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server/main.py', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server/pyproject.toml', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server/tests/conftest.py', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server/tests/test_models/test_devlogs.py', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server/tests/test_models/test_repositories.py', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server/tests/test_models/test_users.py', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server/uv.lock', LF will be replaced by CRLF the next time Git touches it
+tests/test_api/test_repositories.py::test_get_repositories PASSED                                                                                                                                                                                                          [ 50%]
+tests/test_api/test_repositories.py::test_select_repository FAILED                                                                                                                                                                                                         [100%]
+
+=================================================================================================================================== FAILURES ==================================================================================================================================== 
+____________________________________________________________________________________________________________________________ test_select_repository _____________________________________________________________________________________________________________________________ 
+
+async_client = <httpx.AsyncClient object at 0x0000012EBC735710>, test_user_token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Njg4MTE1NjEsInN1YiI6IjM1ZWM2ZDM5LWE0MzItNGM2Ny04YmYxLWJkMjY3MTM0ODc3NCJ9._JUpICNpEmz4iCK_OVCoA1BH9eijsdSA93_7-uqD2gM'
+db_session = <sqlalchemy.ext.asyncio.session.AsyncSession object at 0x0000012EBC6A6110>
+
+    @pytest.mark.asyncio
+    async def test_select_repository(
+        async_client: AsyncClient,
+        test_user_token: str,
+        db_session: AsyncSession
+    ):
+        """
+        [POST /repositories/select]
+        저장소 선택 시나리오 (R-BIZ-1 검증)
+        """
+        # 1. 첫 번째 저장소 선택
+        payload = {
+            "repo_name": "octocat/Hello-World",
+            "repo_url": "https://github.com/octocat/Hello-World"
+        }
+>       response = await async_client.post(
+            "/api/v1/repositories/select",
+            json=payload,
+            headers={"Authorization": f"Bearer {test_user_token}"}
+        )
+
+tests\test_api\test_repositories.py:72:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv\Lib\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1135: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:107: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:716: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:736: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:290: in handle
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:115: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:101: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:355: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:243: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\api\v1\repositories.py:40: in select_repository
+    return await repository_service.select_repository(
+app\services\repository_service.py:51: in select_repository
+    async with db.begin():
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\base.py:121: in __aenter__
+    return await self.start(is_ctxmanager=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py:1876: in start
+    await greenlet_spawn(
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:190: in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <sqlalchemy.orm.session.Session object at 0x0000012EBC6A5C10>, nested = False
+
+    def begin(self, nested: bool = False) -> SessionTransaction:
+        """Begin a transaction, or nested transaction,
+        on this :class:`.Session`, if one is not already begun.
+
+        The :class:`_orm.Session` object features **autobegin** behavior,
+        so that normally it is not necessary to call the
+        :meth:`_orm.Session.begin`
+        method explicitly. However, it may be used in order to control
+        the scope of when the transactional state is begun.
+
+        When used to begin the outermost transaction, an error is raised
+        if this :class:`.Session` is already inside of a transaction.
+
+        :param nested: if True, begins a SAVEPOINT transaction and is
+         equivalent to calling :meth:`~.Session.begin_nested`. For
+         documentation on SAVEPOINT transactions, please see
+         :ref:`session_begin_nested`.
+
+        :return: the :class:`.SessionTransaction` object.  Note that
+         :class:`.SessionTransaction`
+         acts as a Python context manager, allowing :meth:`.Session.begin`
+         to be used in a "with" block.  See :ref:`session_explicit_begin` for
+         an example.
+
+        .. seealso::
+
+            :ref:`session_autobegin`
+
+            :ref:`unitofwork_transaction`
+
+            :meth:`.Session.begin_nested`
+
+
+        """
+
+        trans = self._transaction
+        if trans is None:
+            trans = self._autobegin_t(begin=True)
+
+            if not nested:
+                return trans
+
+        assert trans is not None
+
+        if nested:
+            trans = trans._begin(nested=nested)
+            assert self._transaction is trans
+            self._nested_transaction = trans
+        else:
+>           raise sa_exc.InvalidRequestError(
+                "A transaction is already begun on this Session."
+            )
+E           sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:1941: InvalidRequestError
+============================================================================================================================ short test summary info ============================================================================================================================ 
+FAILED tests/test_api/test_repositories.py::test_select_repository - sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+========================================================================================================================== 1 failed, 1 passed in 0.99s ==========================================================================================================================

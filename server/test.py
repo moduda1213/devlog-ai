@@ -1,27 +1,37 @@
-import psycopg2  # 동기 드라이버
-import sys
+async def fetch_commits(
+     repo_name: str,
+     target_date: date,
+    access_token: str
+) -> list[dict]:
+    """
+    특정 날짜의 커밋 목록 수집
+    R-BIZ-3: UTC 00:00:00 ~ 23:59:59 범위 검색
+    """
+    logger.info(f"Fetching commits for repository: {repo_name}, date: {target_date}")
 
-def test_sync_connection():
-    print("--- [순수 psycopg2 (동기) 접속 테스트] ---")
-    
-    # .env 정보 그대로
-    DSN = "postgresql://devlog:devlog_password@127.0.0.1:5432/devlog_db"
-    
-    print(f"대상: {DSN}")
-    print("연결 시도 중...")
-
-    try:
-        conn = psycopg2.connect(DSN)
-        cur = conn.cursor()
-        cur.execute("SELECT version();")
-        version = cur.fetchone()[0]
-        print(f"\n✅ [성공] 접속 됩니다! DB 버전: {version}")
-        print("결론: 네트워크/계정은 정상입니다. asyncpg 라이브러리가 문제였습니다.")
-        cur.close()
-        conn.close()
-    except Exception as e:
-        print(f"\n❌ [실패] 동기 접속도 안 됩니다: {e}")
-        print("결론: DB 계정(devlog)이 없거나, 포트(5432)가 막혀있습니다.")
-
-if __name__ == "__main__":
-    test_sync_connection()
+    async with httpx.AsyncClient() as client:
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+        # 날짜 범위 설정 (UTC 기준)
+        since = datetime.combine(target_date, time.min).isoformat() + "Z"
+        until = datetime.combine(target_date, time.max).isoformat() + "Z"
+        params = {
+            "since": since,
+            "until": until,
+            "per_page": 100 # 하루 커밋이 100개 넘는 경우는 드물므로 MVP 적합
+        }
+        url = f"https://api.github.com/repos/{repo_name}/commits"
+        try:
+            response = await client.get(url, headers=headers, params=params)
+            response.raise_for_status()
+            commits = response.json()
+            logger.info(f"Found {len(commits)} commits for {repo_name}")
+            return commits
+        except httpx.HTTPStatusError as e:
+            logger.error(f"GitHub API Error fetching commits: {e.response.text}")
+            _handle_github_error(e)
+        except httpx.RequestError as e:
+            logger.error(f"Network error fetching commits: {e}")
+            raise GithubApiError(message=f"Network error: {str(e)}")
