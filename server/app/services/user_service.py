@@ -29,26 +29,31 @@ async def get_or_create_user(
     """
     # 토큰 암호화
     encrypted_token = cipher_suite.encrypt(access_token.encode()).decode()
-    # DB 조회
-    stmt = select(User).where(User.github_user_id == github_id)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
+    try: 
+        # DB 조회
+        stmt = select(User).where(User.github_user_id == github_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
 
-    if user:
-        logger.debug(f"🔄 Updating existing user: {username} (ID: {github_id})")
-        user.access_token_encrypted = encrypted_token
-        user.github_username = username
-        # user.updated_at은 SQLAlchemy onupdate에 의해 자동 갱신됨
-        
-    else:
-        logger.info(f"✨ Creating new user: {username} (ID: {github_id})")
-        user = User(
-            github_user_id=github_id,
-            github_username=username,
-            access_token_encrypted=encrypted_token
-        )
-        db.add(user)
-        
-    await db.commit()
-    await db.refresh(user)
-    return user
+        if user:
+            logger.debug(f"🔄 Updating existing user: {username} (ID: {github_id})")
+            user.access_token_encrypted = encrypted_token
+            user.github_username = username
+            # user.updated_at은 SQLAlchemy onupdate에 의해 자동 갱신됨
+            
+        else:
+            logger.info(f"✨ Creating new user: {username} (ID: {github_id})")
+            user = User(
+                github_user_id=github_id,
+                github_username=username,
+                access_token_encrypted=encrypted_token
+            )
+            db.add(user)
+            
+        await db.commit()
+        await db.refresh(user)
+        return user
+    
+    except Exception as e:
+        await db.rollback()
+        raise e

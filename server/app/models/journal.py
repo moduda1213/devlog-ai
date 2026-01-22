@@ -8,8 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
-class DevLog(Base):
-    __tablename__ = "devlogs"
+class Journal(Base):
+    __tablename__ = "journals"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
@@ -39,8 +39,8 @@ class DevLog(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    user = relationship("User", back_populates="logs")
-    repository = relationship("Repository", back_populates="logs")
+    user = relationship("User", back_populates="journals")
+    repository = relationship("Repository", back_populates="journals")
 
     # Constraints & Indexes
     __table_args__ = (

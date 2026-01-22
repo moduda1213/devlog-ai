@@ -41,10 +41,13 @@ def _handle_github_error(e: httpx.HTTPStatusError):
     
     if status_code == 401:
         raise GithubAuthError()
+    
     elif status_code == 403 or status_code == 429:
         raise GithubRateLimitError()
+    
     elif status_code == 404:
         raise GithubResourceNotFoundError()
+    
     else:
         raise GithubApiError(message=error_msg, status_code=status_code)
 
@@ -69,6 +72,7 @@ async def get_access_token(code: str) -> str:
         
         except httpx.HTTPStatusError as e:
             _handle_github_error(e)
+            
         except httpx.RequestError as e:
             raise GithubApiError(message=f"Network error: {str(e)}")
 
@@ -83,8 +87,10 @@ async def get_user_info(access_token: str) -> dict:
             response = await client.get(GITHUB_USER_URL, headers=headers)
             response.raise_for_status()
             return response.json()
+        
         except httpx.HTTPStatusError as e:
             _handle_github_error(e)
+            
         except httpx.RequestError as e:
             raise GithubApiError(message=f"Network error: {str(e)}")
         
@@ -166,6 +172,7 @@ async def fetch_commits(
         except httpx.HTTPStatusError as e:
             logger.error(f"GitHub API Error: {e.response.text}")
             _handle_github_error(e)
+            
         except httpx.RequestError as e:
             logger.error(f"Network error fetching commits: {e}")
             raise GithubApiError(message=f"Network error: {str(e)}")

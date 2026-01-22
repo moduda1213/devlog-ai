@@ -20,7 +20,7 @@ from app.core.database import Base
 # 모든 모델을 임포트해야 Base.metadata가 테이블을 인식합니다.
 from app.models.user import User
 from app.models.repository import Repository
-from app.models.devlog import DevLog
+from app.models.journal import Journal
 # ----------------------------------------------------------------------
 
 # Interpret the config file for Python logging.

@@ -28,7 +28,7 @@ def decode_token(token: str) -> dict[str, Any] | None:
 
 def encrypt_token(token: str) -> str:
     """토큰 암호화 (DB 저장용)"""
-    f = Fernet(settings.ENCRYPTION_KEY.encode()) # 가정: 설정에 키가 있다고 전제
+    f = Fernet(settings.ENCRYPTION_KEY.encode())
     return f.encrypt(token.encode()).decode()
 
 def decrypt_token(token_encrypted: str) -> str:

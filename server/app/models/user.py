@@ -39,7 +39,7 @@ class User(Base):
         cascade="all, delete-orphan",
         foreign_keys="[Repository.user_id]"
     )
-    logs = relationship("DevLog", back_populates="user")
+    journals = relationship("Journal", back_populates="user")
     
     @property
     def decrypted_access_token(self) -> str:

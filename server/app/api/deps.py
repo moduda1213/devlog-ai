@@ -1,8 +1,12 @@
-from typing import Annotated
 import uuid
+from typing import Annotated, AsyncGenerator
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from redis.asyncio import Redis
+from app.core.redis import get_redis_client, close_redis_client
+
 from app.core.database import get_db
 from app.core.security import decode_token
 from app.models.user import User
@@ -47,3 +51,10 @@ async def get_current_user(
         raise HTTPException(status_code=404, detail="User not found")
         
     return user
+
+async def get_redis() -> AsyncGenerator[Redis | None, None]:
+    redis = await get_redis_client()
+    try:
+        yield redis
+    finally:
+        close_redis_client(redis)

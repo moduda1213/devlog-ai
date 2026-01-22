@@ -1,13 +1,17 @@
 import pytest_asyncio
+import fakeredis.aioredis
+
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from datetime import date
+from uuid import uuid4
+
 from app.core.config import settings
 from app.core.database import Base, get_db
-from app.main import app
-
-from app.models.user import User
 from app.core.security import create_access_token
+from app.models import User, Repository, Journal
+from app.main import app
 
 # 테스트용 DB 엔진 (세션 스코프: 테스트 세션 내내 유지)
 @pytest_asyncio.fixture(scope="session")
@@ -60,6 +64,13 @@ async def async_client(db_session):
     
     app.dependency_overrides.clear()
 
+@pytest_asyncio.fixture
+async def mock_redis():
+    """테스트용 In-Memory Redis"""
+    redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    yield redis
+    await redis.close()
+   
 # 테스트용 사용자 데이터
 @pytest_asyncio.fixture
 async def test_user(db_session: AsyncSession):
@@ -80,7 +91,75 @@ async def test_user(db_session: AsyncSession):
     return user
 
 @pytest_asyncio.fixture
+async def test_journal(db_session: AsyncSession, test_user: User, test_repo: Repository) -> Journal:
+    """테스트용 일지 생성 (Get or Create 패턴 적용)"""
+    # 1. 먼저 DB에 존재하는지 확인
+    stmt = select(Journal).where(
+        Journal.user_id == test_user.id,
+        Journal.repository_id == test_repo.id,
+        Journal.date == date.today()
+    )
+    result = await db_session.execute(stmt)
+    journal = result.scalar_one_or_none()
+    
+    # 2. 없으면 새로 생성
+    if not journal:
+        journal = Journal(
+            user_id=test_user.id,
+            repository_id=test_repo.id,
+            date=date.today(),
+            summary="Test Summary",
+            main_tasks=["Task 1", "Task 2"],
+            learned_things=["Thing 1"],
+            commit_count=5
+        )
+        db_session.add(journal)
+        await db_session.commit()
+        await db_session.refresh(journal)
+    
+    return journal
+
+@pytest_asyncio.fixture
 async def test_user_token(test_user):
     """테스트 유저에 대한 유효한 JWT 토큰 발급"""
     # sub 필드에 user.id(UUID)를 문자열로 변환하여 저장
     return create_access_token(subject=str(test_user.id))
+
+@pytest_asyncio.fixture
+async def access_token_header(test_user_token):
+    """API 요청용 인증 헤더"""
+    return {"Authorization": f"Bearer {test_user_token}"}
+
+@pytest_asyncio.fixture
+async def test_repo(db_session: AsyncSession, test_user: User):
+    """
+    test_user에게 연결된 선택된 저장소 생성
+    (일지 생성 테스트를 위한 전제 조건)
+    """
+    # 중복 확인: 이미 'test/repo'가 있는지 조회
+    stmt = select(Repository).where(
+        Repository.user_id == test_user.id,
+        Repository.repo_name == "test/repo"
+    )
+    result = await db_session.execute(stmt)
+    repo = result.scalar_one_or_none()
+    
+    # 1. 저장소 생성
+    if not repo:
+        repo = Repository(
+            id=uuid4(),
+            user_id=test_user.id,
+            repo_name="test/repo",
+            repo_url="https://github.com/test/repo",
+            is_selected=True
+        )
+        
+        db_session.add(repo)
+        # User의 selected_repo_id 업데이트
+        test_user.selected_repo_id = repo.id
+        db_session.add(test_user) # User 업데이트 명시
+        
+        await db_session.commit()
+        await db_session.refresh(repo)
+    
+    return repo

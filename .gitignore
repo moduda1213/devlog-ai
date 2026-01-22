@@ -12,6 +12,7 @@ venv/
 env/
 .env
 .env.*
+log.txt
 *.sqlite3
 
 # Distribution / Packaging
@@ -38,7 +39,7 @@ feedback.md
 gemini.md
 docs/
 memo/
-log.txt
+.gemini/
 
 # Python/UV (uv creates .venv by default)
 .venv/

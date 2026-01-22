@@ -26,7 +26,7 @@ class Repository(Base):
         back_populates="repositories",
         foreign_keys="[Repository.user_id]"
     )
-    logs = relationship("DevLog", back_populates="repository")
+    journals = relationship("Journal", back_populates="repository")
 
     # 복합 유니크 제약 조건 및 인덱스
     __table_args__ = (
