@@ -25,10 +25,17 @@ async def test_read_journals_pagination(
     
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
-    assert len(data) >= 1
+    
+    assert "items" in data
+    assert "total" in data
+    assert data["page"] == 1
+    assert data["size"] == 10
+    
+    items = data["items"]
+    assert isinstance(items, list)
+    assert len(items) >= 1
     # 조회된 일지 중 테스트 일지가 포함되어 있는지 확인
-    assert any(j["id"] == str(test_journal.id) for j in data)
+    assert any(j["id"] == str(test_journal.id) for j in items)
     
 @pytest.mark.asyncio
 async def test_read_journal_detail(
@@ -90,3 +97,38 @@ async def test_delete_journal(
         headers=headers
     )
     assert get_response.status_code == 404
+    
+@pytest.mark.asyncio
+async def test_access_other_user_journal(
+    async_client: AsyncClient,
+    test_other_user_token: str,  # 타인의 토큰
+    test_journal: Journal        # test_user(본인)의 일지
+):
+    """
+    타인(test_other_user)이 test_user의 일지에 접근 시 
+    404 Not Found (보안상 존재 여부 숨김) 또는 403 Forbidden 반환 검증
+    현재 로직상 user_id 필터링으로 인해 404가 반환됨
+    """
+    headers = {"Authorization": f"Bearer {test_other_user_token}"}
+    
+    # 1. 타인의 일지 상세 조회 시도
+    response = await async_client.get(
+        f"/api/v1/journals/{test_journal.id}",
+        headers=headers
+    )
+    assert response.status_code == 404  # 내 일지가 아니므로 찾을 수 없음
+    
+    # 2. 타인의 일지 수정 시도
+    response = await async_client.patch(
+        f"/api/v1/journals/{test_journal.id}",
+        json={"summary": "Hacked!"},
+        headers=headers
+    )
+    assert response.status_code == 404
+
+    # 3. 타인의 일지 삭제 시도
+    response = await async_client.delete(
+        f"/api/v1/journals/{test_journal.id}",
+        headers=headers
+    )
+    assert response.status_code == 404

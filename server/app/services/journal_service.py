@@ -3,7 +3,7 @@ from datetime import date as date_type
 from uuid import UUID
 
 from redis.asyncio import Redis
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -129,23 +129,31 @@ class JournalService:
         size: int = 10,
         start_date: date_type | None = None,
         end_date: date_type | None = None
-    ) -> list[Journal]:
-        """일지 목록 조회 (페이지네이션)"""
-        stmt = select(Journal).where(Journal.user_id == user_id)
+    ) -> tuple[list[Journal], int]:
         
+        """일지 목록 조회 (페이지네이션)"""
+        conditions = [Journal.user_id == user_id]
         # 날짜 필터링
         if start_date:
-            stmt = stmt.where(Journal.date >= start_date)
+            conditions.append(Journal.date >= start_date)
         if end_date:
-            stmt = stmt.where(Journal.date <= end_date)
+            conditions.append(Journal.date <= end_date)
+            
+        count_stmt = select(func.count()).select_from(Journal).where(*conditions)
+        total = (await self.db.execute(count_stmt)).scalar() or 0
         
-        # 졍렬(최신순) 및 페이징
-        stmt = stmt.order_by(Journal.date.desc())
-        # offset: 지정한 개수만큼 건너뜀
-        stmt = stmt.offset((page-1) * size).limit(size)
-        
+        stmt = (
+            select(Journal)
+            .options(joinedload(Journal.repository)) # N+1방지
+            .where(*conditions)
+            .order_by(Journal.date.desc())
+            .offset((page-1) * size)
+            .limit(size)
+        )
         result = await self.db.execute(stmt)
-        return result.scalars().all()
+        items = result.scalars().all()
+        
+        return items, total
         
     async def get_journal_detail(self, user_id: UUID, journal_id: UUID) -> dict | Journal | None:
         """
@@ -191,6 +199,18 @@ class JournalService:
         
         return journal
     
+    async def _get_journal_orm(self, user_id: UUID, journal_id: UUID) -> Journal | None:
+        """
+        수정/삭제용 ORM 객체 직접 조회용 헬퍼메서드 (캐시 미사용)
+        ㄴ 수정/삭제는 데이터 정합성이 중요하고 ORM 객체가 필요
+        """
+        stmt = select(Journal).where(
+            Journal.id == journal_id,
+            Journal.user_id == user_id
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+    
     async def update_journal(
         self,
         user_id: UUID,
@@ -198,7 +218,7 @@ class JournalService:
         data: JournalUpdate
     ) -> Journal:
         """일지 수정"""
-        journal = await self.get_journal_detail(user_id, journal_id)
+        journal = await self._get_journal_orm(user_id, journal_id)
         if not journal:
             raise ValueError("journal not found")
         
@@ -222,7 +242,7 @@ class JournalService:
         
     async def delete_journal(self, user_id: UUID, journal_id: UUID) -> None:
         """일지 삭제"""
-        journal = await self.get_journal_detail(user_id, journal_id)
+        journal = await self._get_journal_orm(user_id, journal_id)
         
         if not journal:
             raise ValueError("Journal not found")

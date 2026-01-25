@@ -6,7 +6,7 @@ from uuid import UUID
 
 from app.api.deps import get_current_user, get_db, get_redis
 from app.models.user import User
-from app.schemas.journal import JournalResponse, JournalUpdate
+from app.schemas.journal import JournalResponse, JournalUpdate, JournalListResponse
 from app.services.journal_service import JournalService
 
 from loguru import logger
@@ -33,7 +33,7 @@ async def create_journal(
         # 서비스에서 발생한 비즈니스 에러를 HTTP 에러로 변환
         raise HTTPException(status_code=400, detail=str(e))
     
-@router.get("/", response_model=list[JournalResponse])
+@router.get("/", response_model=JournalListResponse)
 async def read_journals(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
@@ -42,16 +42,25 @@ async def read_journals(
     currnet_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """일지 목록 조회"""
+    """일지 목록 조회 (페이지네이션)"""
     logger.info(f"[Journals APIRouter] 일지 목록 조회 진입: {start_date} ~ {end_date}  |  page: {page}")
+    
     service = JournalService(db)
-    return await service.get_journals(
+    
+    items, total = await service.get_journals(
         user_id=currnet_user.id,
         page=page,
         size=size,
         start_date=start_date,
         end_date=end_date
     )
+    
+    return {
+        'items': items,
+        'total': total,
+        'page': page,
+        'size': size
+    }
     
 @router.get("/{journal_id}", response_model=JournalResponse)
 async def read_journal(

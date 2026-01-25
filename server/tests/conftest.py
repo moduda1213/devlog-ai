@@ -163,3 +163,29 @@ async def test_repo(db_session: AsyncSession, test_user: User):
         await db_session.refresh(repo)
     
     return repo
+
+############################################################################
+#            제 2의 사용자 테스터                                             #
+############################################################################  
+@pytest_asyncio.fixture
+async def test_other_user(db_session: AsyncSession):
+    """테스트용 제2 사용자 (타인) 생성"""
+    stmt = select(User).where(User.github_user_id == 88888)
+    result = await db_session.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        user = User(
+            github_user_id=88888,
+            github_username="other_user",
+            access_token_encrypted="gAAAA_other..."
+        )
+        db_session.add(user)
+        await db_session.commit()
+        await db_session.refresh(user)
+    return user
+
+@pytest_asyncio.fixture
+async def test_other_user_token(test_other_user):
+    """제2 사용자의 토큰"""
+    return create_access_token(subject=str(test_other_user.id))

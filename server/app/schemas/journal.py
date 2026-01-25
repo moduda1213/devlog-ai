@@ -35,3 +35,9 @@ class JournalResponse(JournalBase):
     updated_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
+    
+class JournalListResponse(BaseModel):
+    items: list[JournalResponse] = Field(..., description="현재 페이지의 일지 목록")
+    total: int = Field(..., description="전체 일지 개수")
+    page: int = Field(..., description="현재 페이지 번호")
+    size: int = Field(..., description="페이지 크기")
