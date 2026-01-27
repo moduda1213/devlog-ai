@@ -14,7 +14,7 @@ async def get_merged_repositories(
     # 1. DB에서 현재 선택된 저장소 조회
     stmt = select(Repository).where(
         Repository.user_id == user_id,
-        Repository.is_selected == True # noqa: E402
+        Repository.is_selected
     )
     result = await db.execute(stmt)
     selected_repo = result.scalar_one_or_none()
