@@ -1,20 +1,26 @@
-# 가상환경 및 로컬 설정
+# --- 가상환경 및 로컬 설정 ---
 .venv/
+venv/
+env/
+ENV/
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 .env
+.env.*
+!.env.example
+
+# --- 테스트 및 커버리지 ---
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
+tests/
 
-# Git
+# --- Git ---
 .git/
 .gitignore
 
-# Alembic (자동 생성된 버전 파일은 포함해야 할 수도 있으나, 
-# 로컬 테스트용 sqlite 파일이나 임시 파일 제외 목적)
-alembic.ini.bak
-
-# IDE 설정
+# --- IDE ---
 .vscode/
 .idea/

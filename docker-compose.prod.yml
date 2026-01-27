@@ -1,0 +1,73 @@
+services:
+  # === Database Service ===
+  # 프로덕션에서는 보통 관리형 DB(AWS RDS, Cloud SQL)를 쓰지만,
+  # 자체 호스팅할 경우를 대비해 남겨둡니다.
+  db:
+    image: postgres:15-alpine
+    container_name: devlog-db-prod
+    restart: always
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    networks:
+      - devlog-network-prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # === Redis Service ===
+  redis:
+    image: redis:7-alpine
+    container_name: devlog-redis-prod
+    restart: always
+    networks:
+      - devlog-network-prod
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # === Backend API Service (Production) ===
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      # Multi-stage 중 runtime 스테이지를 타겟으로 명시 (선택사항, 기본값이지만 명시적)
+      target: runtime
+    container_name: devlog-server-prod
+    restart: always
+    # 중요: volumes 마운트 제거 (이미지 내 코드 사용)
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379/0
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - SECRET_KEY=${SECRET_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI}
+      # 프로덕션 전용 환경변수 추가 가능 (예: WORKERS_COUNT)
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - devlog-network-prod
+
+volumes:
+  postgres_data_prod:
+
+networks:
+  devlog-network-prod:
+    driver: bridge
