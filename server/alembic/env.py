@@ -14,13 +14,13 @@ config = context.config
 # ----------------------------------------------------------------------
 # 1. App 설정 및 모델 임포트 (마이그레이션 대상)
 # ----------------------------------------------------------------------
-from app.core.config import settings
-from app.core.database import Base
+from app.core.config import settings # noqa: E402
+from app.core.database import Base # noqa: E402
 
 # 모든 모델을 임포트해야 Base.metadata가 테이블을 인식합니다.
-from app.models.user import User
-from app.models.repository import Repository
-from app.models.journal import Journal
+from app.models.user import User # noqa: F401, E402
+from app.models.repository import Repository # noqa: F401, E402
+from app.models.journal import Journal # noqa: F401, E402
 # ----------------------------------------------------------------------
 
 # Interpret the config file for Python logging.

@@ -2,8 +2,6 @@ import pytest
 import respx
 from httpx import AsyncClient, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from app.models.repository import Repository
 
 
 # GitHub API Mock 응답 데이터

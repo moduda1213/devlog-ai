@@ -1,7 +1,6 @@
 import pytest
 import json
 from app.services.journal_service import JournalService
-from app.models import Journal
 from app.schemas.journal import JournalUpdate
 @pytest.mark.asyncio
 async def test_get_journal_detail_cache_miss_and_hit(

@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from datetime import date
 from uuid import uuid4
 
-from app.core.config import settings
 from app.core.database import Base, get_db
 from app.core.security import create_access_token
 from app.models import User, Repository, Journal

@@ -94,7 +94,7 @@ class JournalService:
         }
         
     async def _upsert_journal(self, data: JournalCreate, overwrite: bool) -> Journal:
-        logger.info(f"[JournalService] 일지 생성 및 덮어씌기 commit함수 진입")
+        logger.info("[JournalService] 일지 생성 및 덮어씌기 commit함수 진입")
         
         # 기존 일지 조회
         stmt = select(Journal).where(
