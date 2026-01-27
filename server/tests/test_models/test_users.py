@@ -33,10 +33,10 @@ async def test_create_user(db_session):
 @pytest.mark.asyncio
 async def test_user_unique_constraint(db_session):
     """User 유니크 제약조건(username, user_id) 테스트"""
-    # 1. 첫 번째 유저 생성
+    # 1. 첫 번째 유저 생성 (Fixture와 겹치지 않는 ID 사용: 77777)
     user1 = User(
-        github_username="duplicate_user",
-        github_user_id=99999,
+        github_username="unique_constraint_test_user",
+        github_user_id=77777, 
         access_token_encrypted="token_1"
     )
     db_session.add(user1)
@@ -44,8 +44,8 @@ async def test_user_unique_constraint(db_session):
 
     # 2. 동일한 username을 가진 유저 생성 시도
     user2 = User(
-        github_username="duplicate_user",  # 중복!
-        github_user_id=88888,              # ID는 다름
+        github_username="unique_constraint_test_user",  # 중복!
+        github_user_id=66666,              # ID는 다름
         access_token_encrypted="token_2"
     )
     db_session.add(user2)

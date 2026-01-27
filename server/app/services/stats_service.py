@@ -3,7 +3,6 @@ from datetime import date as dateType, timedelta
 from uuid import UUID
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from loguru import logger
 
 from app.models import Journal
 from app.schemas.stats import (

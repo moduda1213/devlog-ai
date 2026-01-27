@@ -71,7 +71,7 @@ async def github_callback(code: str, db: AsyncSession = Depends(get_db)):
         logger.error(f"❌ HTTP Error during auth: {e.detail}")
         raise e
     
-    except Exception as e:
+    except Exception:
         logger.exception("🔥 Unexpected error during GitHub callback")
         raise HTTPException(status_code=500, detail="Internal Authentication Error")
 

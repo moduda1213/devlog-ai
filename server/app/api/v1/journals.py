@@ -70,7 +70,7 @@ async def read_journal(
     redis: Redis = Depends(get_redis)
 ):
     """일지 상세 조회"""
-    logger.info(f"[Journals APIRouter] 📒일지 상세 조회 진입")
+    logger.info("[Journals APIRouter] 📒일지 상세 조회 진입")
     service = JournalService(db, redis)
     journal = await service.get_journal_detail(
         user_id=currnet_user.id, 

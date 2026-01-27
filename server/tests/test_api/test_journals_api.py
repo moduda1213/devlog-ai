@@ -1,11 +1,8 @@
 import pytest
 from datetime import date
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 from httpx import AsyncClient
-from uuid import uuid4
 
-from app.models.journal import Journal
-from app.services.github_service import fetch_commits
 from app.services.github_service import GithubNoCommitsError
 
 # Mock 데이터
