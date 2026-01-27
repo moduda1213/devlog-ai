@@ -1,0 +1,48 @@
+name: PR Check (Pull Request 검증)
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "server/**"
+      - ".github/workflows/pr-check.yml"
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./server
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Run Tests
+        env:
+          DATABASE_URL: "postgresql+asyncpg://user:pass@localhost/db"
+          REDIS_URL: "redis://localhost:6379/0"
+          SECRET_KEY: "ci-test-secret-key-1234567890"
+          ENCRYPTION_KEY: "bm90LXJlYWwta2V5LWZvci1jaS1vbmx5LWV4YW1wbGU="
+          GITHUB_CLIENT_ID: "dummy_id"
+          GITHUB_CLIENT_SECRET: "dummy_secret"
+          GEMINI_API_KEY: "dummy_key"
+        run: uv run pytest --disable-warnings
+
+      - name: Run Linter
+        run: uv run ruff check .
