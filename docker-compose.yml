@@ -39,7 +39,7 @@ services:
   server:
     build: 
       context: ./server
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: devlog-server
     restart: ${DOCKER_RESTART_POLICY}
     volumes:
@@ -59,6 +59,10 @@ services:
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
       - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL}
+      - GEMINI_MAX_TOKENS=${GEMINI_MAX_TOKENS}
+      - GEMINI_TEMPERATURE=${GEMINI_TEMPERATURE}
     depends_on:
       db:
         condition: service_healthy

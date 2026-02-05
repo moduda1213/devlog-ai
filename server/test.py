@@ -19,3 +19,14 @@ b = state.copy()
 print(a,b,c)
 state["a"] = 4
 print(a,b,c)
+
+import asyncio
+from app.core.database import engine
+from sqlalchemy import text
+
+async def reset():
+    async with engine.begin() as conn:
+        await conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+    print("✅ alembic_version table dropped.")
+    
+asyncio.run(reset())

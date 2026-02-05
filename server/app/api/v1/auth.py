@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
@@ -27,7 +27,11 @@ async def github_login():
     return RedirectResponse(url)
 
 @router.get("/github/callback")
-async def github_callback(code: str, db: AsyncSession = Depends(get_db)):
+async def github_callback(
+    code: str, 
+    response: Response,
+    db: AsyncSession = Depends(get_db)):
+    
     """GitHub 인증 콜백 처리"""
     logger.info(f"📥 OAuth callback received. Code: {code[:10]}...")
     
@@ -39,7 +43,7 @@ async def github_callback(code: str, db: AsyncSession = Depends(get_db)):
         
         logger.debug("Fetching user profile from GitHub...")
         user_info = await github_service.get_user_info(access_token)
-        logger.debug(f"👤 User authenticated: {user_info}")
+        logger.debug(f"👤 User authenticated: {user_info.get('login')}")
         
         
         # 2. 비즈니스 로직 위임 (Service) ✅
@@ -56,7 +60,18 @@ async def github_callback(code: str, db: AsyncSession = Depends(get_db)):
         # ✅ JWT 토큰 발급
         access_token = create_access_token(subject=user.id)
         
-        # 응답에 토큰 포함
+        # 쿠키설정
+        response.set_cookie(
+            key="access_token",
+            value=f"Bearer {access_token}",
+            httponly=True,
+            max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            # expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60, # Internet Explorer 구버전
+            samesite="lax",
+            secure= settings.ENVIRONMENT == "production",
+        )
+        
+        # API 클라이언트용
         return {
             "message": "Login Successful",
             "access_token": access_token,

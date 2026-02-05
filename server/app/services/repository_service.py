@@ -1,7 +1,7 @@
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from app.models.repository import Repository
+from app.models import User, Repository
 from app.schemas.repository import GithubRepo
 
 async def get_merged_repositories(
@@ -79,6 +79,14 @@ async def select_repository(
 
             db.add(repo)
 
+        await db.flush()
+        
+        await db.execute(
+            update(User)
+            .where(User.id == user_id)
+            .values(selected_repo_id = repo.id)
+        )
+        
         await db.commit()
         await db.refresh(repo)
         return repo

@@ -1,4 +1,5 @@
 import httpx
+import asyncio
 from datetime import date, datetime, time
 from loguru import logger
 from app.core.config import settings
@@ -132,47 +133,84 @@ async def fetch_commits(
     access_token: str
 ) -> list[dict]:
     """
-    특정 날짜의 커밋 목록 수집
-    - R-BIZ-3: UTC 00:00:00 ~ 23:59:59 범위 검색
-    - 커밋 0개 시 GithubNoCommitsError 발생
-    """
-    logger.info(f"Fetching commits for repository: {repo_name}, date: {target_date}")
+    특정 날짜의 커밋 목록 수집 및 상세 정보(patch) 포함 (R-BIZ-3)
 
-    async with httpx.AsyncClient() as client:
+    Args:
+        repo_name: 저장소 풀네임 (예: "user/repo")
+        target_date: 조회 대상 날짜
+        access_token: GitHub OAuth 토큰
+
+    Returns:
+        상세 정보(files, patch, stats)가 포함된 커밋 리스트
+
+    Raises:
+        GithubNoCommitsError: 커밋이 없는 경우
+        GithubApiError: API 호출 실패 시
+    """
+    logger.info(f"🔍 [GitHub] 상세 커밋 수집 시작: {repo_name} | 날짜: {target_date}")
+
+    # 상세 조회를 위해 타임아웃을 넉넉하게 설정
+    async with httpx.AsyncClient(timeout=30.0) as client:
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Accept": "application/vnd.github.v3+json",
         }
-        
-        # UTC 기준 시간 범위 설정
+
+        # 1. 커밋 목록(SHA) 조회
         since = datetime.combine(target_date, time.min).isoformat() + "Z"
         until = datetime.combine(target_date, time.max).isoformat() + "Z"
-        
-        params = {
-            "since": since,
-            "until": until,
-            "per_page": 100
-        }
-        
-        url = f"https://api.github.com/repos/{repo_name}/commits"
-        
+
+        list_url = f"https://api.github.com/repos/{repo_name}/commits"
+        params = {"since": since, "until": until, "per_page": 100}
+
         try:
-            response = await client.get(url, headers=headers, params=params)
+            response = await client.get(list_url, headers=headers, params=params)
             response.raise_for_status()
-            commits = response.json()
-            
-            commit_count = len(commits)
-            if commit_count == 0:
-                logger.warning(f"No commits found for {repo_name} on {target_date}")
+            base_commits = response.json()
+
+            if not base_commits:
                 raise GithubNoCommitsError(f"No commits found for {target_date}")
-            
-            logger.info(f"Found {commit_count} commits for {repo_name}")
-            return commits
-            
+
+            # 2. 각 커밋 SHA에 대해 상세 정보 병렬 수집 (asyncio.gather)
+            logger.debug(f"📶 {len(base_commits)}개 커밋 상세 정보 병렬 조회 중...")
+
+            tasks = [
+                client.get(f"{list_url}/{commit['sha']}", headers=headers)
+                for commit in base_commits
+            ]
+
+            responses = await asyncio.gather(*tasks, return_exceptions=True)
+
+            detailed_commits = []
+            for resp in responses:
+                if isinstance(resp, httpx.Response) and resp.status_code == 200:
+                    data = resp.json()
+                    # AI 분석에 최적화된 필드만 추출
+                    detailed_commits.append({
+                        "sha": data["sha"],
+                        "message": data["commit"]["message"],
+                        "author": data["commit"]["author"]["name"],
+                        "date": data["commit"]["author"]["date"],
+                        "stats": data.get("stats"), # total, additions, deletions
+                        "files": [
+                            {
+                                "filename": f["filename"],
+                                "status": f["status"],
+                                "additions": f["additions"],
+                                "deletions": f["deletions"],
+                                "patch": f.get("patch", "") # 실제 코드 변경분
+                            }
+                            for f in data.get("files", [])
+                        ]
+                    })
+                elif isinstance(resp, Exception):
+                    logger.error(f"❌ 커밋 상세 조회 실패: {str(resp)}")
+
+            logger.info(f"✅ {len(detailed_commits)}개의 상세 커밋 데이터 수집 완료")
+            logger.info(detailed_commits)
+            return detailed_commits
+
         except httpx.HTTPStatusError as e:
-            logger.error(f"GitHub API Error: {e.response.text}")
             _handle_github_error(e)
-            
         except httpx.RequestError as e:
-            logger.error(f"Network error fetching commits: {e}")
             raise GithubApiError(message=f"Network error: {str(e)}")
