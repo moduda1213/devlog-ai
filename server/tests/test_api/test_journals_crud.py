@@ -15,6 +15,7 @@ async def test_read_journals_pagination(
 ):
     """일지 목록 조회 (페이지네이션) 테스트"""
     headers = {"Authorization": f"Bearer {test_user_token}"}
+    journal_id = test_journal.id
     
     # 1. 목록 조회 요청
     response = await async_client.get(
@@ -35,7 +36,7 @@ async def test_read_journals_pagination(
     assert isinstance(items, list)
     assert len(items) >= 1
     # 조회된 일지 중 테스트 일지가 포함되어 있는지 확인
-    assert any(j["id"] == str(test_journal.id) for j in items)
+    assert any(j["id"] == str(journal_id) for j in items)
     
 @pytest.mark.asyncio
 async def test_read_journal_detail(
@@ -45,14 +46,15 @@ async def test_read_journal_detail(
 ):
     """일지 상세 조회 테스트"""
     headers = {"Authorization": f"Bearer {test_user_token}"}
+    journal_id = test_journal.id
     
     response = await async_client.get(
-        f"/api/v1/journals/{test_journal.id}",
+        f"/api/v1/journals/{journal_id}",
         headers=headers
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["id"] == str(test_journal.id)
+    assert data["id"] == str(journal_id)
     assert data["summary"] == test_journal.summary
     
 @pytest.mark.asyncio
@@ -63,12 +65,13 @@ async def test_update_journal(
 ):
     """일지 수정 테스트"""
     headers = {"Authorization": f"Bearer {test_user_token}"}
+    journal_id = test_journal.id
     update_data = {
         "summary": "Updated Summary",
         "main_tasks": ["Updated Task 1", "Updated Task 2"]
     }
     response = await async_client.patch(
-        f"/api/v1/journals/{test_journal.id}",
+        f"/api/v1/journals/{journal_id}",
         json=update_data,
         headers=headers
     )
@@ -85,15 +88,16 @@ async def test_delete_journal(
 ):
     """일지 삭제 테스트"""
     headers = {"Authorization": f"Bearer {test_user_token}"}
+    journal_id = test_journal.id
     # 1. 삭제 요청
     response = await async_client.delete(
-        f"/api/v1/journals/{test_journal.id}",
+        f"/api/v1/journals/{journal_id}",
         headers=headers
     )
     assert response.status_code == 204
     # 2. 삭제 확인 (상세 조회 시 404)
     get_response = await async_client.get(
-        f"/api/v1/journals/{test_journal.id}",
+        f"/api/v1/journals/{journal_id}",
         headers=headers
     )
     assert get_response.status_code == 404
@@ -110,17 +114,18 @@ async def test_access_other_user_journal(
     현재 로직상 user_id 필터링으로 인해 404가 반환됨
     """
     headers = {"Authorization": f"Bearer {test_other_user_token}"}
+    journal_id = test_journal.id
     
     # 1. 타인의 일지 상세 조회 시도
     response = await async_client.get(
-        f"/api/v1/journals/{test_journal.id}",
+        f"/api/v1/journals/{journal_id}",
         headers=headers
     )
     assert response.status_code == 404  # 내 일지가 아니므로 찾을 수 없음
     
     # 2. 타인의 일지 수정 시도
     response = await async_client.patch(
-        f"/api/v1/journals/{test_journal.id}",
+        f"/api/v1/journals/{journal_id}",
         json={"summary": "Hacked!"},
         headers=headers
     )
@@ -128,7 +133,7 @@ async def test_access_other_user_journal(
 
     # 3. 타인의 일지 삭제 시도
     response = await async_client.delete(
-        f"/api/v1/journals/{test_journal.id}",
+        f"/api/v1/journals/{journal_id}",
         headers=headers
     )
     assert response.status_code == 404

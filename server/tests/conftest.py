@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from datetime import date
 from uuid import uuid4
 
+from app.core.redis import get_redis_client
 from app.core.database import Base, get_db
 from app.core.security import create_access_token
 from app.models import User, Repository, Journal
@@ -46,7 +47,7 @@ async def db_session(engine):
 
 # ✅ 수정: FastAPI 앱 테스트 클라이언트 (httpx 0.28+ 호환)
 @pytest_asyncio.fixture
-async def async_client(db_session):
+async def async_client(db_session, mock_redis):
     """
     FastAPI 앱을 테스트하기 위한 AsyncClient.
     Dependency Override를 통해 테스트용 DB 세션을 사용하도록 강제합니다.
@@ -54,7 +55,11 @@ async def async_client(db_session):
     async def override_get_db():
         yield db_session
 
+    async def override_get_redis():
+        yield mock_redis
+
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_redis_client] = override_get_redis
     
     # ASGITransport 사용 (httpx 최신 버전 권장 방식)
     transport = ASGITransport(app=app)
