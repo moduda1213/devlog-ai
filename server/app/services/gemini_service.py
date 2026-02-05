@@ -1,5 +1,7 @@
 import json
+import textwrap
 import google.generativeai as genai
+from google.api_core import exceptions as google_exceptions
 from tenacity import retry, stop_after_attempt, wait_exponential
 from app.core.config import settings
 
@@ -51,10 +53,19 @@ class GeminiService:
         # 브랜치 정보는 GitHub API 커밋 응답에 직접적으로 포함되지 않을 수 있음 
         # (필요하다면 상위 호출에서 전달받아야 함. 일단 제거하거나 'main'으로 고정)
         prompt = self._build_prompt(commits, date, commit_count)
-        response = await self.model.generate_content_async(prompt)
+        logger.debug(prompt)
         
         try:
+            response = await self.model.generate_content_async(prompt)
             return json.loads(response.text)
+        
+        except google_exceptions.ResourceExhausted:
+            logger.error("Gemini API Quota Exceeded (429)")
+            return {
+               "summary": "AI 할당량 초과로 인해 요약을 생성할 수 없습니다. 잠시 후 다시 시도해주세요.",
+               "main_tasks": ["API 할당량 초과"],
+               "learned_things": ["https://ai.google.dev/gemini-api/docs/rate-limits 확인 필요"]
+            }
         
         except json.JSONDecodeError:
             # 재시도 트리커를 위해 에러 발생
@@ -62,55 +73,55 @@ class GeminiService:
         
     def _build_prompt(self, commits: list[dict], date: str, commit_count: int) -> str:
         # 커밋 메시지들을 문자열로 변환
-        commits_text = json.dumps(commits, ensure_ascii=False, indent=2)
-        return f"""
-        # Role
-        Senior Backend Architect & Tech Writer
+        commits_text = json.dumps(commits, ensure_ascii=False)
+        prompt = textwrap.dedent(f"""
+            # Role
+            Senior Backend Architect & Tech Writer
 
-        # Context
-        다음은 {date}의 Git 커밋 로그입니다.
-        - 총 커밋 수: {commit_count}개
+            # Context
+            다음은 {date}의 Git 커밋 로그입니다.
+            - 총 커밋 수: {commit_count}개
 
-        [Commits Data]
-        {commits_text}
+            [Commits Data]
+            {commits_text}
 
-        # Task
-        위 커밋 데이터를 분석하여 개발 일지를 작성하세요.
-        커밋 메시지, 변경된 파일명, diff 내용을 종합적으로 고려하여 작성합니다.
+            # Task
+            위 커밋 데이터를 분석하여 개발 일지를 작성하세요.
+            커밋 메시지, 변경된 파일명, diff 내용을 종합적으로 고려하여 작성합니다.
 
-        # Output Format (JSON)
-        {{
-        "summary": "3문장으로 작성 (경어체)",
-        "main_tasks": ["기술적 성과 1 (구체적 수치/효과 포함)", "..."],
-        "learned_things": ["코드 변화에서 도출된 인사이트", "..."]
-        }}
+            # Output Format (JSON)
+            {{
+            "summary": "3문장으로 작성 (경어체)",
+            "main_tasks": ["기술적 성과 1 (구체적 수치/효과 포함)", "..."],
+            "learned_things": ["코드 변화에서 도출된 인사이트", "..."]
+            }}
 
-        # Constraints
-        - summary: 정확히 3문장 (작업 흐름 → 주요 성과 → 기술적 의의 순서 권장)
-        - main_tasks: 중요도 순 정렬, 최대 5개, trivial 커밋 제외
-        - learned_things: 반드시 커밋 내용 기반, 최소 1개 이상
-        - 기술 용어는 한글(영문) 형태로 병기
-        - 수치가 있다면 반드시 포함
-        - JSON 형식을 엄격히 준수
-        
-        # Examples
-        ## Good Example:
-        {{
-        "summary": "Redis 캐싱 전략을 도입하여 API 응답 속도를 개선했습니다. 사용자 인증 로직을 JWT 기반으로 전환하여 보안을 강화했습니다. 테스트 커버리지를 65%에서 82%로 향상시켰습니다.",
-        "main_tasks": [
-            "Redis LFU 캐싱 전략 도입으로 주요 API 응답시간 40% 단축 (평균 200ms → 120ms)"
-        ],
-        "learned_things": [
-            "Redis의 LFU와 LRU 정책 차이: 장기 접속 패턴에서는 LFU가 히트율이 12% 더 높음을 확인"
-        ]
-        }}
+            # Constraints
+            - summary: 정확히 3문장 (작업 흐름 → 주요 성과 → 기술적 의의 순서 권장)
+            - main_tasks: 중요도 순 정렬, 최대 5개, trivial 커밋 제외
+            - learned_things: 반드시 커밋 내용 기반, 최소 1개 이상
+            - 기술 용어는 한글(영문) 형태로 병기
+            - 수치가 있다면 반드시 포함
+            - JSON 형식을 엄격히 준수
+            
+            # Examples
+            ## Good Example:
+            {{
+            "summary": "Redis 캐싱 전략을 도입하여 API 응답 속도를 개선했습니다. 사용자 인증 로직을 JWT 기반으로 전환하여 보안을 강화했습니다. 테스트 커버리지를 65%에서 82%로 향상시켰습니다.",
+            "main_tasks": [
+                "Redis LFU 캐싱 전략 도입으로 주요 API 응답시간 40% 단축 (평균 200ms → 120ms)"
+            ],
+            "learned_things": [
+                "Redis의 LFU와 LRU 정책 차이: 장기 접속 패턴에서는 LFU가 히트율이 12% 더 높음을 확인"
+            ]
+            }}
 
-        ## Bad Example:
-        {{
-        "summary": "오늘 열심히 개발했습니다.",
-        "main_tasks": ["코드 수정"],
-        "learned_things": ["많은 것을 배웠습니다"]
-        }}
-        """
-
-        
+            ## Bad Example:
+            {{
+            "summary": "오늘 열심히 개발했습니다.",
+            "main_tasks": ["코드 수정"],
+            "learned_things": ["많은 것을 배웠습니다"]
+            }}
+            """
+        ).strip()
+        return prompt

@@ -40,37 +40,36 @@ class JournalService:
          
         # User 객체에 repositories가 로드되지 않았을 수 있으므로 DB에서 조회
         stmt = select(Repository).where(Repository.id == user.selected_repo_id)
-        result = await self.db.execute(stmt)
-        repo = result.scalar_one_or_none()
-        
-        logger.debug(f"📶리포지토리 유무 판단 =====> {repo}")
-        
-        if not repo:
-             raise ValueError("Repository not found")
-         
-        # 2. 커밋 수집
-        commits = await fetch_commits(
-            repo_name=repo.repo_name,
-            target_date=date,
-            access_token=user.decrypted_access_token
-        )
-        
-        # 3. AI 분석
-        ai_data = await self.gemini_service.generate_journal(commits, date)
-        
-        # 통계 추출 (GitHub 커밋 데이터에서 계산)
-        stats = self._calculate_stats(commits)
-        
-        journal_data = JournalCreate(
-            user_id=user.id,
-            repository_id=repo.id,
-            date=date,
-            raw_commits=commits,  # 디버깅용 저장
-            **ai_data,            # summary, main_tasks, learned_things
-            **stats               # commit_count, files_changed 등
-        )
-        # 4. DB 저장 (Upsert)
         try:
+            result = await self.db.execute(stmt)
+            repo = result.scalar_one_or_none()
+            
+            if not repo:
+                raise ValueError("Repository not found")
+            
+            # 2. 커밋 수집
+            commits = await fetch_commits(
+                repo_name=repo.repo_name,
+                target_date=date,
+                access_token=user.decrypted_access_token
+            )
+            
+            # 3. AI 분석
+            ai_data = await self.gemini_service.generate_journal(commits, date)
+            
+            # 통계 추출 (GitHub 커밋 데이터에서 계산)
+            stats = self._calculate_stats(commits)
+            logger.info(f"통계 추출: {stats}")
+            journal_data = JournalCreate(
+                user_id=user.id,
+                repository_id=repo.id,
+                date=date,
+                raw_commits=commits,  # 디버깅용 저장
+                **ai_data,            # summary, main_tasks, learned_things
+                **stats               # commit_count, files_changed 등
+            )
+            
+            # 4. DB 저장 (Upsert)
             # upsert 로직 수행 (add, update 등)
             journal = await self._upsert_journal(journal_data, overwrite)
             # ✅ 핵심: 모든 작업이 성공적으로 끝나면 여기서 커밋
@@ -102,25 +101,28 @@ class JournalService:
             Journal.repository_id == data.repository_id,
             Journal.date == data.date
         )
-        
-        result = await self.db.execute(stmt)
-        existing = result.scalar_one_or_none()
-        
-        if existing:
-            if not overwrite:
-                raise ValueError("Journal already exists")
+        try:
+            result = await self.db.execute(stmt)
+            existing = result.scalar_one_or_none()
             
-            # 업데이트
-            for key, value in data.model_dump().items():
-                setattr(existing, key, value)
+            if existing:
+                if not overwrite:
+                    raise ValueError("Journal already exists")
                 
-            return existing
-            
-        # 신규 생성
-        new_journal = Journal(**data.model_dump())
-        self.db.add(new_journal)
-        return new_journal
-    
+                # 업데이트
+                for key, value in data.model_dump().items():
+                    setattr(existing, key, value)
+                    
+                return existing
+                
+            # 신규 생성
+            new_journal = Journal(**data.model_dump())
+            self.db.add(new_journal)
+            return new_journal
+        
+        except Exception as e:
+            await self.db.rollback()
+            raise e
     
     async def get_journals(
         self,
@@ -130,30 +132,34 @@ class JournalService:
         start_date: date_type | None = None,
         end_date: date_type | None = None
     ) -> tuple[list[Journal], int]:
-        
-        """일지 목록 조회 (페이지네이션)"""
-        conditions = [Journal.user_id == user_id]
-        # 날짜 필터링
-        if start_date:
-            conditions.append(Journal.date >= start_date)
-        if end_date:
-            conditions.append(Journal.date <= end_date)
+        try:
+            """일지 목록 조회 (페이지네이션)"""
+            conditions = [Journal.user_id == user_id]
+            # 날짜 필터링
+            if start_date:
+                conditions.append(Journal.date >= start_date)
+            if end_date:
+                conditions.append(Journal.date <= end_date)
+                
+            count_stmt = select(func.count()).select_from(Journal).where(*conditions)
+            total = (await self.db.execute(count_stmt)).scalar() or 0
             
-        count_stmt = select(func.count()).select_from(Journal).where(*conditions)
-        total = (await self.db.execute(count_stmt)).scalar() or 0
+            stmt = (
+                select(Journal)
+                .options(joinedload(Journal.repository)) # N+1방지
+                .where(*conditions)
+                .order_by(Journal.date.desc())
+                .offset((page-1) * size)
+                .limit(size)
+            )
+            result = await self.db.execute(stmt)
+            items = result.scalars().all()
+            
+            return items, total
         
-        stmt = (
-            select(Journal)
-            .options(joinedload(Journal.repository)) # N+1방지
-            .where(*conditions)
-            .order_by(Journal.date.desc())
-            .offset((page-1) * size)
-            .limit(size)
-        )
-        result = await self.db.execute(stmt)
-        items = result.scalars().all()
-        
-        return items, total
+        except Exception as e:
+            await self.db.rollback()
+            raise e
         
     async def get_journal_detail(self, user_id: UUID, journal_id: UUID) -> dict | Journal | None:
         """
@@ -217,23 +223,24 @@ class JournalService:
         journal_id: UUID,
         data: JournalUpdate
     ) -> Journal:
-        """일지 수정"""
-        journal = await self._get_journal_orm(user_id, journal_id)
-        if not journal:
-            raise ValueError("journal not found")
-        
-        update_date = data.model_dump(exclude_unset=True)
-        for key, value in update_date.items():
-            setattr(journal, key, value)
-            
         try:
+            """일지 수정"""
+            journal = await self._get_journal_orm(user_id, journal_id)
+            if not journal:
+                raise ValueError("journal not found")
+            
+            update_date = data.model_dump(exclude_unset=True)
+            for key, value in update_date.items():
+                setattr(journal, key, value)
+            
+        
             self.db.add(journal)
             await self.db.commit()
             await self.db.refresh(journal)
             
             if self.redis:
                 await self.redis.delete(f"journal:{user_id}:{journal_id}")
-                
+                logger.info("❌ Cache Invalidate")
             return journal
         
         except Exception as e:
@@ -242,17 +249,18 @@ class JournalService:
         
     async def delete_journal(self, user_id: UUID, journal_id: UUID) -> None:
         """일지 삭제"""
-        journal = await self._get_journal_orm(user_id, journal_id)
-        
-        if not journal:
-            raise ValueError("Journal not found")
-        
         try:
+            journal = await self._get_journal_orm(user_id, journal_id)
+            
+            if not journal:
+                raise ValueError("Journal not found")
+        
             await self.db.delete(journal)
             await self.db.commit()
             
             if self.redis:
                 await self.redis.delete(f"journal:{user_id}:{journal_id}")
+                logger.info("❌ Cache Invalidate")
                 
         except Exception as e:
             await self.db.rollback()

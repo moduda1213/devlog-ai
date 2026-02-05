@@ -13,6 +13,7 @@ env/
 .env
 .env.*
 log.txt
+server/test.py
 *.sqlite3
 
 # Distribution / Packaging

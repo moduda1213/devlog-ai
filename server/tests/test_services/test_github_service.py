@@ -15,6 +15,24 @@ MOCK_COMMITS = [
     }
 ]
 
+MOCK_COMMIT_DETAIL = {
+    "sha": "123456",
+    "commit": {
+        "message": "feat: init project",
+        "author": {"name": "test_user", "date": "2025-01-19T10:00:00Z"}
+    },
+    "stats": {"total": 10, "additions": 7, "deletions": 3},
+    "files": [
+        {
+            "filename": "app/main.py",
+            "status": "added",
+            "additions": 7,
+            "deletions": 3,
+            "patch": "+ print('hello')" # 이 데이터가 핵심!
+        }
+    ]
+}
+
 @pytest.mark.asyncio
 async def test_fetch_commits_success():
     """커밋 목록 조회 성공 케이스"""
@@ -22,13 +40,23 @@ async def test_fetch_commits_success():
     repo_name = "octocat/Hello-World"
     
     async with respx.mock:
-        # GitHub API Mocking
+        # 1. 커밋 목록 API Mocking
         respx.get(f"https://api.github.com/repos/{repo_name}/commits").mock(
             return_value=Response(200, json=MOCK_COMMITS)
         )
+
+        # 2. 🔥 커밋 상세 API Mocking (추가된 부분)
+        respx.get(f"https://api.github.com/repos/{repo_name}/commits/123456").mock(
+            return_value=Response(200, json=MOCK_COMMIT_DETAIL)
+        )
+
         commits = await fetch_commits(repo_name, target_date, "test_token")
+
+        # 3. 검증 로직 강화
         assert len(commits) == 1
         assert commits[0]["sha"] == "123456"
+        assert "files" in commits[0]
+        assert commits[0]["files"][0]["patch"] == "+ print('hello')"
 
 @pytest.mark.asyncio
 async def test_fetch_commits_empty():
