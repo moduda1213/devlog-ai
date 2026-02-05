@@ -24,7 +24,7 @@ jobs:
         uses: cloudtype-github-actions/deploy@v1
         with:
           token: ${{ secrets.CLOUDTYPE_TOKEN }}
-          project: devlog-ai
+          project: postgresql
           stage: main
           yaml: >
             name: devlog-ai
