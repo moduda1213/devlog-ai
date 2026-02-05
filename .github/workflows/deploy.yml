@@ -1,7 +1,7 @@
 name: Deploy to CloudType
 
 on:
-  push:
+  push: 
     branches: [ "main" ]
     paths:
       - "server/**"
@@ -24,9 +24,9 @@ jobs:
         uses: cloudtype-github-actions/deploy@v1
         with:
           token: ${{ secrets.CLOUDTYPE_TOKEN }}
-          project: postgresql
+          project: csjh1/postgresql
           stage: main
-          yaml: >
+          yaml: |
             name: devlog-ai
             app: dockerfile
             options:
