@@ -84,7 +84,7 @@ uv run uvicorn app.main:app --reload
 
 이 프로젝트는 **CloudType** (PaaS) 및 **Upstash** (Serverless Redis) 환경에 최적화되어 있습니다.
 
-자세한 배포 방법은 [CloudType 배포 가이드](docs/guidelines/cloudtype-deploy.md)를 참고하세요.
+자세한 배포 방법은 [CloudType 배포 가이드](docs/backend/guidelines/cloudtype-deploy.md)를 참고하세요.
 
 ---
 
@@ -114,9 +114,3 @@ uv run uvicorn app.main:app --reload
 - [x] Phase 8: 테스트 코드 작성
 - [x] Phase 9: 배포 (CloudType + CI/CD)
 - [x] Phase 10: 백엔드 최종 검증 및 문서화 완료
-
----
-
-## 📄 라이선스
-
-MIT License
