@@ -61,11 +61,7 @@ class GeminiService:
         
         except google_exceptions.ResourceExhausted:
             logger.error("Gemini API Quota Exceeded (429)")
-            return {
-               "summary": "AI 할당량 초과로 인해 요약을 생성할 수 없습니다. 잠시 후 다시 시도해주세요.",
-               "main_tasks": ["API 할당량 초과"],
-               "learned_things": ["https://ai.google.dev/gemini-api/docs/rate-limits 확인 필요"]
-            }
+            raise ValueError("AI 할당량 초과로 인해 요약을 생성할 수 없습니다. 잠시 후 다시 시도해주세요.")
         
         except json.JSONDecodeError:
             # 재시도 트리커를 위해 에러 발생

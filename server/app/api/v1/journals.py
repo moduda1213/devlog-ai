@@ -6,12 +6,23 @@ from uuid import UUID
 
 from app.api.deps import get_current_user, get_db, get_redis
 from app.models.user import User
-from app.schemas.journal import JournalResponse, JournalUpdate, JournalListResponse
+from app.schemas.journal import JournalResponse, JournalUpdate, JournalListResponse, JournalStatusResponse
 from app.services.journal_service import JournalService
 
 from loguru import logger
 
 router = APIRouter()
+
+@router.get("/daily-status", response_model=JournalStatusResponse)
+async def check_daily_status(
+    date: date_type | None = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """오늘 일지 생성 가능 여부 확인"""
+    target_date = date or date_type.today()
+    service = JournalService(db)
+    return await service.check_daily_status(current_user, target_date)
 
 @router.post("/", response_model=JournalResponse, status_code=status.HTTP_201_CREATED)
 async def create_journal(
@@ -37,13 +48,14 @@ async def create_journal(
 async def read_journals(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
+    repository_id: UUID = Query(..., description="저장소 ID 필터"),
     start_date: date_type | None = None,
     end_date: date_type | None = None,
     currnet_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """일지 목록 조회 (페이지네이션)"""
-    logger.info(f"[Journals APIRouter] 일지 목록 조회 진입: {start_date} ~ {end_date}  |  page: {page}")
+    logger.info(f"[Journals APIRouter] 일지 목록 조회 진입: {start_date} ~ {end_date}  |  page: {page} | Repo: {repository_id}")
     
     service = JournalService(db)
     
@@ -52,9 +64,10 @@ async def read_journals(
         page=page,
         size=size,
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
+        repository_id=repository_id
     )
-    
+     
     return {
         'items': items,
         'total': total,

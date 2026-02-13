@@ -8,13 +8,16 @@ from app.services.github_service import GithubNoCommitsError
 # Mock 데이터
 MOCK_COMMITS = [
     {
-        "sha": "test_sha",
-        "commit": {
-            "message": "feat: add journal api",
-            "author": {"name": "test_user", "date": "2025-01-20T10:00:00Z"}
-        },
-        "stats": {"additions": 10, "deletions": 2},
-        "files": [{"filename": "api.py"}]
+        "message": "feat: add journal api",
+        "files": [
+            {
+                "filename": "api.py",
+                "status": "modified",
+                "additions": 10,
+                "deletions": 2,
+                "patch": "..."
+            }
+        ]
     }
 ]
 

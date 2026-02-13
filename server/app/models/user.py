@@ -20,6 +20,8 @@ class User(Base):
     # 보안 정보 (암호화된 토큰)
     access_token_encrypted: Mapped[str] = mapped_column(String(500))
     
+    avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    
     # 선택된 저장소 (User 1 : Repository 1 관계 - MVP)
     # 순환 참조 방지를 위해 문자열로 클래스 명시 추천
     # use_alter=True: Circular Dependency 해결 (테이블 생성 후 제약조건 추가)
@@ -39,7 +41,15 @@ class User(Base):
         cascade="all, delete-orphan",
         foreign_keys="[Repository.user_id]"
     )
-    journals = relationship("Journal", back_populates="user")
+    journals = relationship(
+        "Journal", 
+        back_populates="user"
+    )
+    refresh_tokens = relationship(
+        "RefreshToken",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
     
     @property
     def decrypted_access_token(self) -> str:

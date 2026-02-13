@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 14
     ENCRYPTION_KEY: str
 
     # --- External APIs ---
@@ -37,7 +38,8 @@ class Settings(BaseSettings):
     GEMINI_TEMPERATURE: float = 0.7
 
     # --- Utils ---
-    ALLOWED_ORIGINS: str = '["http://localhost:3000"]'
+    FRONTEND_URL: str = "http://localhost:4173"
+    ALLOWED_ORIGINS: str = '["http://localhost:3000", "http://localhost:4173"]'
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/app.log"
 

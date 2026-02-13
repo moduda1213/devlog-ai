@@ -33,12 +33,10 @@ async def test_github_callback_success(async_client: AsyncClient):
          patch("app.services.github_service.get_user_info", return_value=MOCK_GITHUB_USER):
         
         response = await async_client.get("/api/v1/auth/github/callback?code=mock_code")
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert data["message"] == "Login Successful"
-        assert "access_token" in data
-        assert data["user"]["username"] == "testuser"
+
+        assert response.status_code == 307
+        assert "/auth/callback" in response.headers["location"]       
+         
 
 @pytest.mark.asyncio
 async def test_read_users_me_success(async_client: AsyncClient, test_user):

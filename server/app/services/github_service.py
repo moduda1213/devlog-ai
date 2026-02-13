@@ -185,29 +185,41 @@ async def fetch_commits(
             for resp in responses:
                 if isinstance(resp, httpx.Response) and resp.status_code == 200:
                     data = resp.json()
-                    # AI 분석에 최적화된 필드만 추출
+
+                    # ✨ [최적화] AI 분석용 파일 데이터 정제
+                    optimized_files = []
+                    for f in data.get("files", []):
+                        filename = f["filename"]
+                        patch = f.get("patch", "")
+                        status = f["status"]
+
+                        # 1. 분석 가치가 없는 파일 제외 (Lock 파일, 이미지, 바이너리 등)
+                        if any(filename.endswith(ext) for ext in ['.lock', '.png', '.jpg', '.svg', '.pdf', '.min.js']):
+                            continue
+
+                        # 2. Patch 길이 제한 (토큰 폭발 방지)
+                        # 새로 추가된 파일이거나 내용이 너무 길면 요약 처리
+                        if status == 'added' and len(patch) > 300:
+                            patch = "(new file content hidden)"
+                        elif len(patch) > 500:
+                            patch = patch[:500] + "\n...(truncated)"
+
+                        optimized_files.append({
+                            "filename": filename,
+                            "status": status,
+                            "patch": patch
+                        })
+
+                    # ✨ [최적화] 핵심 정보만 남김 (sha, author 등 제거)
                     detailed_commits.append({
-                        "sha": data["sha"],
                         "message": data["commit"]["message"],
-                        "author": data["commit"]["author"]["name"],
-                        "date": data["commit"]["author"]["date"],
-                        "stats": data.get("stats"), # total, additions, deletions
-                        "files": [
-                            {
-                                "filename": f["filename"],
-                                "status": f["status"],
-                                "additions": f["additions"],
-                                "deletions": f["deletions"],
-                                "patch": f.get("patch", "") # 실제 코드 변경분
-                            }
-                            for f in data.get("files", [])
-                        ]
+                        "files": optimized_files
                     })
+
                 elif isinstance(resp, Exception):
                     logger.error(f"❌ 커밋 상세 조회 실패: {str(resp)}")
 
-            logger.info(f"✅ {len(detailed_commits)}개의 상세 커밋 데이터 수집 완료")
-            logger.info(detailed_commits)
+            logger.info(f"✅ {len(detailed_commits)}개의 상세 커밋 데이터 수집 완료 (AI 최적화됨)")
             return detailed_commits
 
         except httpx.HTTPStatusError as e:

@@ -13,7 +13,8 @@ async def get_or_create_user(
     db: AsyncSession, 
     github_id: int, 
     username: str, 
-    access_token: str
+    access_token: str,
+    avatar_url: str | None = None
 ) -> User:
     """
     GitHub 사용자 정보를 기반으로 사용자를 생성하거나 갱신합니다.
@@ -39,14 +40,15 @@ async def get_or_create_user(
             logger.debug(f"🔄 Updating existing user: {username} (ID: {github_id})")
             user.access_token_encrypted = encrypted_token
             user.github_username = username
-            # user.updated_at은 SQLAlchemy onupdate에 의해 자동 갱신됨
+            user.avatar_url = avatar_url
             
         else:
             logger.info(f"✨ Creating new user: {username} (ID: {github_id})")
             user = User(
                 github_user_id=github_id,
                 github_username=username,
-                access_token_encrypted=encrypted_token
+                access_token_encrypted=encrypted_token,
+                avatar_url=avatar_url
             )
             db.add(user)
             

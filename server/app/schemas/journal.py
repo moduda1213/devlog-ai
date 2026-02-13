@@ -41,3 +41,10 @@ class JournalListResponse(BaseModel):
     total: int = Field(..., description="전체 일지 개수")
     page: int = Field(..., description="현재 페이지 번호")
     size: int = Field(..., description="페이지 크기")
+    
+class JournalStatusResponse(BaseModel):
+    """오늘 일지 생성 가능 상태 응답"""
+    date: date_type
+    has_journal: bool = Field(..., description="오늘 일지 이미 생성됨 여부")
+    has_commits: bool = Field(..., description="오늘 커밋 존재 여부")
+    can_generate: bool = Field(..., description="일지 생성 가능 여부 (커밋O AND 일지X)")

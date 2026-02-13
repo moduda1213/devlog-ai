@@ -20,9 +20,13 @@ async def test_read_journals_pagination(
     # 1. 목록 조회 요청
     response = await async_client.get(
         "/api/v1/journals/",
-        params={"page": 1, "size": 10},
+        params={
+            "page": 1, 
+            "size": 10,
+            "repository_id": str(test_journal.repository_id)
+        },
         headers=headers
-    )
+    )    
     
     assert response.status_code == 200
     data = response.json()
