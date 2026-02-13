@@ -1,0 +1,5 @@
+{
+  "name": "DevLog AI",
+  "description": "AI-powered daily engineering journal generator that summarizes your GitHub commits into structured insights.",
+  "requestFramePermissions": []
+}

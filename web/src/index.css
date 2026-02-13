@@ -1,0 +1,48 @@
+/* web/src/index.css */
+@import "tailwindcss";
+
+/* 커스텀 테마 설정 (v4 방식: CSS 변수 활용) */
+@theme {
+    /* Github Colors */
+    --color-github-bg: #0d1117;
+    --color-github-subtle: #161b22;
+    --color-github-border: #30363d;
+    --color-github-text: #e6edf3;
+    --color-github-muted: #848d97;
+    --color-github-btn: #238636;
+    --color-github-btn-hover: #2ea043;
+    --color-github-accent: #2f81f7;
+    --color-github-danger: #d93025;
+
+    /* Animation */
+    --animate-pulse-fast: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 다크모드 설정 (class 방식 강제 적용) */
+@variant dark (&:where(.dark, .dark *));
+
+/* 커스텀 스크롤바 */
+:root {
+    --scrollbar-track: #f3f4f6;
+    --scrollbar-thumb: #d1d5db;
+    --scrollbar-thumb-hover: #9ca3af;
+}
+.dark {
+    --scrollbar-track: #0d1117;
+    --scrollbar-thumb: #30363d;
+    --scrollbar-thumb-hover: #8b949e;
+}
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
