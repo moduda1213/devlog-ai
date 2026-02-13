@@ -73,7 +73,7 @@ async def github_callback(
             value=refresh_token,
             httponly=True,
             max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60, # 초 단위 변환
-            samesite="lax",
+            samesite="none" if settings.ENVIRONMENT == "production" else "lax",
             secure=settings.ENVIRONMENT == "production",
             path="/api/v1/auth/refresh" # Refresh 요청 때만 전송되도록 제한
         )
@@ -105,7 +105,7 @@ async def logout(
         key="refresh_token",
         path="/api/v1/auth/refresh",
         httponly=True,
-        samesite="lax",
+        samesite="none" if settings.ENVIRONMENT == "production" else "lax",
         secure=settings.ENVIRONMENT == "production"
     )
 
@@ -153,7 +153,7 @@ async def refresh_access_token(
             value=new_refresh_token_val,
             httponly=True,
             max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-            samesite="lax",
+            samesite="none" if settings.ENVIRONMENT == "production" else "lax",
             secure=settings.ENVIRONMENT == "production",
             path="/api/v1/auth/refresh"
         )
