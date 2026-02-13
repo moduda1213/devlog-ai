@@ -44,7 +44,7 @@ export const getJournalDetail = async (id: string): Promise<Journal> => {
 
 // 일지 생성 (AI)
 export const createJournal = async (overwrite = true): Promise<Journal> => {
-  const { data } = await apiClient.post<Journal>('/api/v1/journals/', null, {
+  const { data } = await apiClient.post<Journal>('/api/v1/journals', null, {
     params: { overwrite },
   });
   return data;
