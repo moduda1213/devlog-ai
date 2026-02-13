@@ -1,0 +1,44 @@
+name: Frontend CI (PR Check)
+
+on:
+  pull_request:
+    paths:
+      - "web/**"
+      - ".github/workflows/frontend-ci.yml"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "web/**"
+      - ".github/workflows/frontend-ci.yml"
+
+jobs:
+  frontend-validate:
+    name: Validate Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # 1. Type Check (tsc)
+      # Vite는 빌드 시 타입 체크를 하지 않으므로, 여기서 명시적으로 수행하여 에러를 잡습니다.
+      - name: Type Check
+        run: npx tsc -b
+
+      # 2. Build Test (Vite)
+      # 실제 빌드가 성공하는지 검증합니다. (청크 분할 설정 등이 올바른지 확인)
+      - name: Build Test
+        run: npm run build

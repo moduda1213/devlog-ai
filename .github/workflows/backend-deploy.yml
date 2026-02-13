@@ -1,0 +1,103 @@
+name: Deploy to CloudType
+
+on:
+  push: 
+    branches: [ "main" ]
+    paths:
+      - "server/**"
+      - ".github/workflows/deploy.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Connect deploy key
+        uses: cloudtype-github-actions/connect@v1
+        with:
+          token: ${{ secrets.CLOUDTYPE_TOKEN }}
+          ghtoken: ${{ secrets.GHP_TOKEN }}
+
+      - name: Deploy to CloudType
+        uses: cloudtype-github-actions/deploy@v1
+        with:
+          token: ${{ secrets.CLOUDTYPE_TOKEN }}
+          project: csjh1/postgresql
+          stage: main
+          yaml: |
+            name: devlog-ai
+            app: dockerfile
+            options:
+              ports: "8000"
+              dockerfile: Dockerfile
+              healthz: /health
+              strategy: rolling
+              env:
+                # Application
+                - name: PROJECT_NAME
+                  value: "DevLog AI"
+                - name: VERSION
+                  value: "0.1.0"
+                - name: DEBUG
+                  value: "False"
+                - name: ENVIRONMENT
+                  value: "production"
+                - name: FRONTEND_URL
+                  value: "${{ secrets.FRONTEND_URL}}"
+
+                # Database
+                - name: DATABASE_URL
+                  value: ${{ secrets.DATABASE_URL }}
+
+                # Redis
+                - name: REDIS_URL
+                  value: ${{ secrets.REDIS_URL }}
+                - name: REDIS_MAX_MEMORY
+                  value: "50mb"
+
+                # GitHub OAuth
+                - name: GITHUB_CLIENT_ID
+                  value: ${{ secrets.GH_CLIENT_ID }}
+                - name: GITHUB_CLIENT_SECRET
+                  value: ${{ secrets.GH_CLIENT_SECRET }}
+                - name: GITHUB_REDIRECT_URI
+                  value: ${{ secrets.GH_REDIRECT_URI }}
+
+                # Security
+                - name: SECRET_KEY
+                  value: ${{ secrets.SECRET_KEY }}
+                - name: ALGORITHM
+                  value: ${{ secrets.ALGORITHM }}
+                - name: ACCESS_TOKEN_EXPIRE_MINUTES
+                  value: "30"
+                - name: ENCRYPTION_KEY
+                  value: ${{ secrets.ENCRYPTION_KEY }}
+
+                # Gemini AI
+                - name: GEMINI_API_KEY
+                  value: ${{ secrets.GEMINI_API_KEY }}
+                - name: GEMINI_MODEL
+                  value: ${{ secrets.GEMINI_MODEL }}
+                - name: GEMINI_MAX_TOKENS
+                  value: "1000"
+                - name: GEMINI_TEMPERATURE
+                  value: "0.7"
+
+                # CORS & Logging
+                - name: ALLOWED_ORIGINS
+                  value: ${{ secrets.ALLOWED_ORIGINS }}
+                - name: LOG_LEVEL
+                  value: "WARNING"
+                - name: LOG_FILE
+                  value: "logs/app.log"
+
+                # Server Runtime
+                - name: WORKERS
+                  value: "1"
+            context:
+              git:
+                url: git@github.com:${{ github.repository }}.git
+                ref: ${{ github.ref }}
+                path: server
