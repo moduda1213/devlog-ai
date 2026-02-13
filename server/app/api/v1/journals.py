@@ -24,7 +24,7 @@ async def check_daily_status(
     service = JournalService(db)
     return await service.check_daily_status(current_user, target_date)
 
-@router.post("/", response_model=JournalResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=JournalResponse, status_code=status.HTTP_201_CREATED)
 async def create_journal(
     date: date_type | None = None,
     overwrite: bool = Query(True, description="이미 존재할 경우 덮어쓰기 여부"),
@@ -44,7 +44,7 @@ async def create_journal(
         # 서비스에서 발생한 비즈니스 에러를 HTTP 에러로 변환
         raise HTTPException(status_code=400, detail=str(e))
     
-@router.get("/", response_model=JournalListResponse)
+@router.get("", response_model=JournalListResponse)
 async def read_journals(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
