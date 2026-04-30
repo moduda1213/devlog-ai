@@ -84,8 +84,6 @@ uv run uvicorn app.main:app --reload
 
 이 프로젝트는 **CloudType** (PaaS) 및 **Upstash** (Serverless Redis) 환경에 최적화되어 있습니다.
 
-자세한 배포 방법은 [CloudType 배포 가이드](docs/backend/guidelines/cloudtype-deploy.md)를 참고하세요.
-
 ---
 
 ## 📚 기술 스택
@@ -97,20 +95,3 @@ uv run uvicorn app.main:app --reload
 | **Cache** | Redis (Upstash) | 일지 조회 캐싱, 세션 관리 |
 | **AI** | Google Gemini 2.5 Flash | 커밋 분석 및 텍스트 생성 |
 | **Deploy** | Docker, CloudType | 컨테이너 기반 배포 |
-
----
-
-## 📅 개발 현황 (TDS)
-
-> **Current Phase**: Phase 10 - 문서화 및 최종 점검 (Backend Core Completed)
-
-- [x] Phase 1: 프로젝트 셋업 & 기술 스택 선정
-- [x] Phase 2: DB 설계 및 ERD 작성
-- [x] Phase 3: 인증 (GitHub OAuth + JWT)
-- [x] Phase 4: GitHub API 연동
-- [x] Phase 5: Gemini AI 연동
-- [x] Phase 6: 일지 CRUD 구현
-- [x] Phase 7: 통계 서비스 (백엔드 로직 완료)
-- [x] Phase 8: 테스트 코드 작성
-- [x] Phase 9: 배포 (CloudType + CI/CD)
-- [x] Phase 10: 백엔드 최종 검증 및 문서화 완료
